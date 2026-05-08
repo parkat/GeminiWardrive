@@ -1,0 +1,6 @@
+{
+  "name": "Wardrive Pro",
+  "description": "High-performance wardriving platform for capturing and exploring WiFi, Bluetooth, and SDR signals with real-time mapping and analytics.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["Real-time Data Visualization", "Geospatial Mapping", "Signal Analytics"]
+}

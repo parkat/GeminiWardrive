@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // --- Entity Validations ---
+    function isValidSession(data) {
+      return data.keys().hasAll(['id', 'name', 'startTime', 'ownerId']) &&
+             data.keys().size() <= 10 &&
+             data.id is string && data.id.size() <= 100 &&
+             data.name is string && data.name.size() <= 200 &&
+             data.startTime is number &&
+             data.ownerId == request.auth.uid;
+    }
+
+    function isValidSignal(data) {
+      return data.keys().hasAll(['id', 'timestamp', 'type', 'mac', 'rssi', 'lat', 'lng', 'sessionId', 'ownerId']) &&
+             data.keys().size() <= 15 &&
+             data.type in ['WiFi', 'Bluetooth', 'SDR', 'Cellular'] &&
+             data.mac is string && data.mac.size() <= 48 &&
+             data.rssi is number &&
+             data.lat is number && data.lng is number &&
+             data.ownerId == request.auth.uid;
+    }
+
+    // --- Collections ---
+    match /sessions/{sessionId} {
+      allow get, list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isSignedIn() && isValidId(sessionId) && isValidSession(request.resource.data);
+      allow update: if isSignedIn() && isOwner(resource.data.ownerId) && 
+                      isValidSession(request.resource.data) &&
+                      request.resource.data.ownerId == resource.data.ownerId &&
+                      request.resource.data.id == resource.data.id;
+      allow delete: if isOwner(resource.data.ownerId);
+
+      match /signals/{signalId} {
+        // Master Gate: Access depends on parent session ownership
+        function canAccessSession() {
+          return get(/databases/$(database)/documents/sessions/$(sessionId)).data.ownerId == request.auth.uid;
+        }
+
+        allow list, get: if isSignedIn() && canAccessSession();
+        allow create: if isSignedIn() && isValidId(signalId) && canAccessSession() && isValidSignal(request.resource.data);
+      }
+    }
+  }
+}

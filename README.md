@@ -1,11 +1,61 @@
-<div align="center">
+# Wardrive Pro: Technical Specification & Operator Guide
 
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
+## 1. System Architecture
+Wardrive Pro is a professional-grade signal reconnaissance platform designed to run on-device (Edge Computing) to ensure maximum privacy and zero reliance on cloud infrastructure.
 
-  <h1>Built with AI Studio</h2>
+### Hardware Stack
+- **RTL-SDR (Software Defined Radio):** Capture wideband radio emissions (IMSI, Pagers, LoRa, 433MHz signals).
+- **ESP32 Dev Kit V1:** Dedicated 2.4GHz WiFi and Bluetooth scanning co-processor.
+- **Alfa Network USB WiFi:** High-gain primary scanner supporting Monitor Mode for capture of hidden SSIDs and management frames.
+- **USB GPS Puck:** Precise NMEA positioning data.
+- **Host Device:** (e.g., Raspberry Pi 4/5 or Laptop) Running the Wardrive Pro Node.js server.
 
-  <p>The fastest path from prompt to production with Gemini.</p>
+---
 
-  <a href="https://aistudio.google.com/apps">Start building</a>
+## 2. Software Runtime
+The runtime is built on **Node.js (Turbo-Engine)** with specialized buffers for high-frequency signal ingestion.
 
-</div>
+### Data Flow
+1. **Physical Layer:** Hardware interfaces (Serial/USB) capture raw RF data.
+2. **Driver Layer:** 
+   - `serialport` handles GPS NMEA sentences.
+   - `airmon-ng` puts the Alfa card into monitor mode.
+   - `rtl_power` logs frequency energy.
+3. **Ingestion Layer:** Data is parsed and stored in a **Circular Buffer** (RAM).
+4. **Persistence Layer:** Every 20 signals (or 60 seconds), data is flushed to a **Local SQLite Database**.
+5. **View Layer:** The React Immersive UI fetches data via `/api` for real-time visualization.
+
+---
+
+## 3. Hardware Setup Instructions
+
+### A. GPS Integration
+Connect your USB GPS puck. Identify the device path:
+```bash
+ls /dev/ttyUSB* # Usually /dev/ttyUSB0
+```
+Update `server.ts` configuration with the correct baud rate (usually 9600).
+
+### B. Alfa WiFi Monitor Mode
+Your Alfa card must be in monitor mode for advanced capabilities:
+```bash
+sudo airmon-ng start wlan1
+# Your driver will now target wlan1mon
+```
+
+### C. ESP32 Bridge
+Flash the included `WARDIVE_FIRMWARE.ino` to your ESP32. It will broadcast signals over Serial to the host server.
+
+---
+
+## 4. Operational Commands
+- **Start Capture:** `npm run dev` (Starts backend + frontend bridge).
+- **Export Data:** Navigate to `Explorer -> Export CSV`.
+- **Enrichment:** On the Explorer page, use the 'Enrichment' toggle when internet is available to pull vendor OUI information for MAC addresses.
+
+---
+
+## 5. Security & Privacy
+- **Zero-Cloud:** All signal data stays on your device's filesystem.
+- **In-Memory Scrubbing:** Temporary buffers are wiped immediately after persistence.
+- **Field Encryption:** Option in `Settings` to hash MAC addresses and SSIDs using HMAC-SHA256 for redacted sharing.

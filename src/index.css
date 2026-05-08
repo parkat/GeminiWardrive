@@ -1,0 +1,58 @@
+@import "tailwindcss";
+
+@theme {
+  --color-brand-bg: #020203;
+  --color-brand-ink: #cbd5e1; /* slate-300 */
+  --color-brand-cyan: #06b6d4; /* cyan-500 */
+  --color-brand-green: #34d399; /* emerald-400 */
+  --color-brand-amber: #fbbf24; /* amber-400 */
+  --color-brand-red: #ef4444; /* red-500 */
+  --color-brand-muted: #64748b; /* slate-500 */
+  --color-brand-panel: rgba(15, 23, 42, 0.4); /* slate-900/40 */
+  
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+}
+
+@layer base {
+  body {
+    @apply bg-brand-bg text-brand-ink font-sans selection:bg-brand-cyan/30 selection:text-white antialiased overflow-hidden;
+  }
+}
+
+.glow {
+  text-shadow: 0 0 10px rgba(6, 182, 212, 0.5);
+}
+
+.scanline {
+  @apply w-full h-[100px] z-50 pointer-events-none opacity-[0.03] absolute;
+  background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, var(--color-brand-cyan) 50%, rgba(0, 0, 0, 0) 100%);
+  bottom: 100%;
+  animation: scanline 15s linear infinite;
+}
+
+@keyframes scanline {
+  0% { bottom: 100%; }
+  100% { bottom: -100px; }
+}
+
+.atmospheric-glow {
+  background: radial-gradient(circle at 50% 40%, #111827 0%, transparent 70%);
+}
+
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-black/20;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-white/10 rounded-full;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-brand-cyan/40;
+}
+

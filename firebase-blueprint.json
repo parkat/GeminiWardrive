@@ -1,0 +1,47 @@
+{
+  "entities": {
+    "Session": {
+      "title": "Capture Session",
+      "description": "A single wardriving session from start to stop.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "startTime": { "type": "number", "format": "timestamp" },
+        "endTime": { "type": "number", "format": "timestamp" },
+        "deviceInfo": { "type": "string" },
+        "pointCount": { "type": "number" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "name", "startTime", "ownerId"]
+    },
+    "SignalPoint": {
+      "title": "Signal Point",
+      "description": "A single captured RF signal point with location data.",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "number", "format": "timestamp" },
+        "type": { "type": "string", "enum": ["WiFi", "Bluetooth", "SDR", "Cellular"] },
+        "ssid": { "type": "string" },
+        "mac": { "type": "string" },
+        "rssi": { "type": "number" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "sessionId": { "type": "string" },
+        "ownerId": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "type", "mac", "rssi", "lat", "lng", "sessionId", "ownerId"]
+    }
+  },
+  "firestore": {
+    "/sessions/{sessionId}": {
+      "schema": "Session",
+      "description": "Core session metadata."
+    },
+    "/sessions/{sessionId}/signals/{signalId}": {
+      "schema": "SignalPoint",
+      "description": "Batched signal data points for a session."
+    }
+  }
+}
