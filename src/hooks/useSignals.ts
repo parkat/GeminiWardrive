@@ -32,7 +32,7 @@ export function useSignals() {
             cpuUsage: Math.floor(Math.random() * 10), // Base system usage is okay to estimate
             memoryUsage: Math.floor(Math.random() * 5 + 40),
             batteryLevel: 100,
-            uptime: Math.floor(process.uptime ? process.uptime() : 0),
+            uptime: Math.floor(performance.now() / 1000),
             gps: healthData.hardware.gps,
             esp32: healthData.hardware.esp32,
             alfa: healthData.hardware.alfa,

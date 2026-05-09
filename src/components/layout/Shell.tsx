@@ -2,9 +2,11 @@ import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Activity, Map, Database, Settings, Shield, Zap, Satellite, Battery, HardDrive } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useSignals } from '../../hooks/useSignals';
 
 export const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
+  const { stats } = useSignals();
   
   return (
     <div className="flex flex-col h-screen bg-brand-bg text-brand-ink font-sans overflow-hidden selection:bg-brand-cyan/30 relative">
