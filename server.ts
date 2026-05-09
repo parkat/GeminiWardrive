@@ -51,12 +51,12 @@ async function startServer() {
   let signalBuffer: any[] = [];
   const BUFFER_LIMIT = 10;
 
-  // Unified Hardware State Management
+  // Unified Hardware State Management (Initialized as DISCONNECTED)
   const hardwareContext = {
-    gps: { lat: 34.0522, lng: -118.2437, status: 'Active' },
-    esp32: { mode: 'BLE_ONLY', transport: 'SERIAL_115200', status: 'STREAMING' },
-    alfa: { mode: 'MONITOR', card: 'wlan1mon', status: 'SCANNING' },
-    sdr: { status: 'Listening', gain: 'Auto' }
+    gps: { lat: 0, lng: 0, status: 'DISCONNECTED', satellites: 0 },
+    esp32: { mode: 'BLE_ONLY', transport: 'SERIAL_PENDING', status: 'DISCONNECTED' },
+    alfa: { mode: 'MONITOR', card: 'wlan1mon', status: 'DISCONNECTED' },
+    sdr: { status: 'DISCONNECTED', gain: 'Auto' }
   };
 
   // Simple OUI Cache (In-Memory for now, could be a JSON file)
@@ -129,6 +129,11 @@ async function startServer() {
     const signals = Array.isArray(req.body) ? req.body : [req.body];
     const sessionId = req.query.sessionId as string || "LOCAL_SESSION";
     
+    // Truthful update: Receiving signals confirms hardware presence
+    hardwareContext.esp32.status = 'ACTIVE';
+    hardwareContext.alfa.status = 'ACTIVE';
+    hardwareContext.gps.status = 'LOCKED';
+    
     signalBuffer.push(...signals.map(s => ({
       ...s,
       sessionId,
@@ -156,24 +161,10 @@ async function startServer() {
   });
 
   app.get("/api/mock-signals", async (req, res) => {
-     // Return real history from SQLite if available, otherwise mock
+     // Return real history from SQLite. If empty, return empty array.
+     // NO MOCK DATA is generated here to ensure hardware-integrity reporting.
      const history = await db.all('SELECT * FROM signals ORDER BY timestamp DESC LIMIT 100');
-     if (history.length > 0) return res.json(history);
-
-     const signals = [];
-     for (let i = 0; i < 50; i++) {
-        signals.push({
-          id: `node-${i}`,
-          type: i % 2 === 0 ? 'WiFi' : 'Bluetooth',
-          ssid: `LocalNet_${i}`,
-          mac: `00:11:22:33:44:${i.toString(16)}`,
-          rssi: -Math.floor(Math.random() * 50 + 40),
-          lat: hardwareContext.gps.lat + (Math.random() - 0.5) * 0.01,
-          lng: hardwareContext.gps.lng + (Math.random() - 0.5) * 0.01,
-          timestamp: Date.now()
-        });
-     }
-     res.json(signals);
+     res.json(history);
   });
 
   // Vite middleware

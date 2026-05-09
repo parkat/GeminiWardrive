@@ -24,9 +24,9 @@ export const Shell: React.FC<{ children: React.ReactNode }> = ({ children }) => 
         </div>
 
         <div className="hidden md:flex gap-8 text-[11px] font-mono tracking-widest uppercase">
-          <HeaderMetric label="Satellite Lock" value="34.0522° N, 118.2437° W" color="text-brand-cyan glow" icon={<Satellite size={10} />} />
-          <HeaderMetric label="Power Draw" value="0.84W (Efficient)" color="text-brand-green" icon={<Battery size={10} />} />
-          <HeaderMetric label="Storage" value="4.2GB / 32GB" color="text-brand-amber" icon={<HardDrive size={10} />} />
+          <HeaderMetric label="Satellite Lock" value="NO_FIX (SEARCHING...)" color="text-brand-muted" icon={<Satellite size={10} />} />
+          <HeaderMetric label="Power State" value="DC_Wired (STBY)" color="text-brand-green" icon={<Battery size={10} />} />
+          <HeaderMetric label="Storage" value="Local_DB [SQLITE]" color="text-brand-amber" icon={<HardDrive size={10} />} />
         </div>
       </nav>
 

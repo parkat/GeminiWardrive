@@ -28,8 +28,8 @@ const MapPlaceholder = () => (
          </div>
          <h3 className="font-mono text-brand-cyan font-bold uppercase tracking-[0.2em]">Map Terminal</h3>
          <p className="text-[10px] font-mono text-brand-muted leading-relaxed uppercase">
-            Integrating Geospatial Engine...<br/>
-            Waiting for Vector Tile Sync
+            Awaiting Hardware Bridge...<br/>
+            No Active GPS Telemetry Detected
          </p>
       </div>
       

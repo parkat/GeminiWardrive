@@ -26,9 +26,9 @@ export const Dashboard: React.FC = () => {
            <section>
               <h3 className="text-[11px] font-bold text-brand-muted uppercase tracking-[0.2em] mb-4">Capture Stats</h3>
               <div className="space-y-4">
-                 <DisplayStat label="Access Points" value={wifiCount + 1482} />
-                 <DisplayStat label="BLE Devices" value={bleCount + 419} color="text-brand-cyan" />
-                 <DisplayStat label="Handshakes" value="24" color="text-brand-amber" />
+                 <DisplayStat label="Access Points" value={wifiCount} />
+                 <DisplayStat label="BLE Devices" value={bleCount} color="text-brand-cyan" />
+                 <DisplayStat label="Total Nodes" value={signals.length} color="text-brand-amber" />
               </div>
            </section>
 
@@ -100,14 +100,26 @@ export const Dashboard: React.FC = () => {
            <div className="h-48 bg-black/60 rounded-xl border border-white/5 p-4 font-mono text-[11px] overflow-hidden flex flex-col backdrop-blur-sm">
               <div className="flex justify-between mb-2 text-brand-muted border-b border-white/5 pb-2">
                  <span className="uppercase tracking-tighter flex items-center gap-2"><Terminal size={12} /> Hardware Runtime Logs</span>
-                 <span className="text-brand-cyan/50 italic animate-pulse">[LIVE_STREAM]</span>
+                 <span className="text-brand-cyan/50 italic animate-pulse">[{signals.length > 0 ? 'LIVE_STREAMING' : 'IDLE'}]</span>
               </div>
               <div className="flex-1 space-y-1 text-slate-400 overflow-y-auto">
-                 <LogLine time="22:30:01" prefix="ESP32-S3" msg="Scanned 12 APs in 140ms. Radio optimized." color="text-brand-green" />
-                 <LogLine time="22:30:05" prefix="GPS" msg="Lock confirmed. Vertical Accuracy: 1.2m" color="text-brand-green" />
-                 <LogLine time="22:30:09" prefix="DB" msg="Committed 4.2kb session block to Firestore." color="text-brand-cyan" />
-                 <LogLine time="22:30:12" prefix="PWR" msg="Low power mode active. Scaling clock to 160MHz." color="text-brand-amber" />
-                 <LogLine time="22:30:15" prefix="SCAN" msg="Waiting for next dwell period (3sec)..." color="text-brand-muted" />
+                 {signals.length > 0 ? (
+                    signals.slice(0, 10).map((s, i) => (
+                       <LogLine 
+                          key={s.id} 
+                          time={new Date(s.timestamp).toLocaleTimeString([], { hour12: false })} 
+                          prefix={s.type} 
+                          msg={`Discovery: ${s.ssid || 'Unknown'} (${s.rssi}dBm)`} 
+                          color={s.type === 'WiFi' ? 'text-brand-cyan' : 'text-brand-green'} 
+                       />
+                    ))
+                 ) : (
+                    <div className="h-full flex flex-col items-center justify-center opacity-20 text-center">
+                       <Radio className="mb-2 animate-pulse" size={24} />
+                       <p>WAITING FOR HARDWARE BRIDGE...</p>
+                       <p className="text-[9px]">Ensure local agent is running and pushing to /api/signals</p>
+                    </div>
+                 )}
               </div>
            </div>
         </div>
