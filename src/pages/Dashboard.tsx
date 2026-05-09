@@ -7,6 +7,38 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'rec
 export const Dashboard: React.FC = () => {
   const { signals, stats } = useSignals();
 
+  // Screen Wake Lock API to keep screen alive
+  React.useEffect(() => {
+    let wakeLock: any = null;
+
+    const requestWakeLock = async () => {
+      try {
+        if ('wakeLock' in navigator) {
+          wakeLock = await (navigator as any).wakeLock.request('screen');
+          console.log('[SYSTEM] Wake Lock Active: Preventing system sleep.');
+        }
+      } catch (err) {
+        console.error('[SYSTEM] Wake Lock failed:', err);
+      }
+    };
+
+    requestWakeLock();
+
+    // Re-request if page becomes visible again
+    const handleVisibilityChange = () => {
+      if (wakeLock !== null && document.visibilityState === 'visible') {
+        requestWakeLock();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      if (wakeLock) wakeLock.release();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, []);
+
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
       

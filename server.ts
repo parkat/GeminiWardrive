@@ -53,11 +53,22 @@ async function startServer() {
 
   // Unified Hardware State Management (Initialized as DISCONNECTED)
   const hardwareContext = {
-    gps: { lat: 0, lng: 0, status: 'DISCONNECTED', satellites: 0 },
-    esp32: { mode: 'BLE_ONLY', transport: 'SERIAL_PENDING', status: 'DISCONNECTED' },
-    alfa: { mode: 'MONITOR', card: 'wlan1mon', status: 'DISCONNECTED' },
-    sdr: { status: 'DISCONNECTED', gain: 'Auto' }
+    gps: { lat: 0, lng: 0, status: 'DISCONNECTED', lastSeen: 0 },
+    esp32: { status: 'DISCONNECTED', lastSeen: 0 },
+    alfa: { status: 'DISCONNECTED', lastSeen: 0 },
+    sdr: { status: 'DISCONNECTED', lastSeen: 0 }
   };
+
+  // Background task to check for hardware timeouts
+  setInterval(() => {
+    const now = Date.now();
+    const TIMEOUT = 15000; // 15 seconds
+
+    if (now - hardwareContext.gps.lastSeen > TIMEOUT) hardwareContext.gps.status = 'DISCONNECTED';
+    if (now - hardwareContext.esp32.lastSeen > TIMEOUT) hardwareContext.esp32.status = 'DISCONNECTED';
+    if (now - hardwareContext.alfa.lastSeen > TIMEOUT) hardwareContext.alfa.status = 'DISCONNECTED';
+    // SDR is handled similarly if it reports health via a separate internal process
+  }, 5000);
 
   // Simple OUI Cache (In-Memory for now, could be a JSON file)
   const ouiCache: Record<string, string> = {
@@ -139,10 +150,24 @@ async function startServer() {
     const signals = Array.isArray(req.body) ? req.body : [req.body];
     const sessionId = req.query.sessionId as string || "LOCAL_SESSION";
     
-    // Truthful update: Receiving signals confirms hardware presence
-    hardwareContext.esp32.status = 'ACTIVE';
-    hardwareContext.alfa.status = 'ACTIVE';
-    hardwareContext.gps.status = 'LOCKED';
+    // Update Hardware Heartbeats
+    const timestamp = Date.now();
+    signals.forEach(s => {
+      if (s.type === 'WiFi') {
+        hardwareContext.alfa.status = 'ACTIVE';
+        hardwareContext.alfa.lastSeen = timestamp;
+      }
+      if (s.type === 'Bluetooth' || s.type === 'BLE') {
+        hardwareContext.esp32.status = 'ACTIVE';
+        hardwareContext.esp32.lastSeen = timestamp;
+      }
+      if (s.lat && s.lng) {
+        hardwareContext.gps.status = 'LOCKED';
+        hardwareContext.gps.lastSeen = timestamp;
+        hardwareContext.gps.lat = s.lat;
+        hardwareContext.gps.lng = s.lng;
+      }
+    });
     
     signalBuffer.push(...signals.map(s => ({
       ...s,
