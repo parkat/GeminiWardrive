@@ -119,12 +119,18 @@ export const Explorer: React.FC = () => {
                                     headers: { 'Content-Type': 'application/json' },
                                     body: JSON.stringify({ macs })
                                  }).then(() => {
-                                    // Refresh data
                                     fetch('/api/mock-signals')
                                        .then(res => res.json())
                                        .then(data => setNodes(data));
                                  });
                               }
+                           }}
+                        />
+                        <ActionButton 
+                           icon={<Download size={12} />} 
+                           label="Export for LLM" 
+                           onClick={() => {
+                              window.location.href = '/api/export-llm';
                            }}
                         />
                         <ActionButton icon={<MapPinIcon size={12} />} label="Trace Route" />

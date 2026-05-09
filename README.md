@@ -43,12 +43,11 @@ sudo airmon-ng start wlan1
 # Your driver will now target wlan1mon
 ```
 
-### C. ESP32 Bridge
-Flash the included `WARDIVE_FIRMWARE.ino` to your ESP32. It will broadcast signals over Serial to the host server.
+### C. ESP32 BLE Bridge
+Flash the included `WARDIVE_FIRMWARE.ino` to your ESP32. It is strictly for BLE/Bluetooth discovery and will push data to the host via USB-Serial.
 
----
-
-## 4. Operational Commands
+### D. SDR Scanning Strategy
+The system uses the RTL-SDR to perform a broad "Energy Scan". If a frequency peaks (e.g. 433.9MHz), the system flags it for closer inspection and records a 5-second burst for later metadata extraction.
 - **Start Capture:** `npm run dev` (Starts backend + frontend bridge).
 - **Export Data:** Navigate to `Explorer -> Export CSV`.
 - **Enrichment:** On the Explorer page, use the 'Enrichment' toggle when internet is available to pull vendor OUI information for MAC addresses.

@@ -1,71 +1,43 @@
 /* 
-  WARDIVE PRO - HIGH PERFORMANCE ESP32 FIRMWARE
-  Target: ESP32-WROOM / ESP32-S3
-  Sensors: Internal WiFi & BT, GPS (Neo-6M/8M on RX/TX)
-  
-  This firmware is optimized for energy efficiency:
-  - Batched UDP packets to reduce radio wake time
-  - Low-latency interrupts for GPS
-  - Minimal string manipulation
+  WARDIVE PRO - BLE CO-PROCESSOR FIRMWARE
+  Target: ESP32 Dev Kit V1
+  Function: High-speed BLE/Bluetooth scanning.
+  Communication: Serial @ 115200 baud
 */
 
-#include <WiFi.h>
-#include <HTTPClient.h>
-#include <WiFiUdp.h>
-#include <HardwareSerial.h>
+#include <BLEDevice.h>
+#include <BLEUtils.h>
+#include <BLEScan.h>
+#include <BLEAdvertisedDevice.h>
 
-// --- CONFIGURATION ---
-const char* ssid = "YOUR_MOBILE_HOTSPOT";
-const char* password = "YOUR_PASSWORD";
-const char* serverUrl = "https://YOUR_APP_URL/api/signals";
+int scanTime = 5; // Scan duration in seconds
+BLEScan* pBLEScan;
 
-// Hardware Pins
-#define GPS_RX 16
-#define GPS_TX 17
-
-HardwareSerial GPSSerial(2);
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+    void onResult(BLEAdvertisedDevice advertisedDevice) {
+      // Format: [B|MAC|RSSI|NAME]
+      Serial.print("[B|");
+      Serial.print(advertisedDevice.getAddress().toString().c_str());
+      Serial.print("|");
+      Serial.print(advertisedDevice.getRSSI());
+      Serial.print("|");
+      Serial.print(advertisedDevice.haveName() ? advertisedDevice.getName().c_str() : "HIDDEN");
+      Serial.println("]");
+    }
+};
 
 void setup() {
   Serial.begin(115200);
-  GPSSerial.begin(9600, SERIAL_8N1, GPS_RX, GPS_TX);
-  
-  WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("CONNECTED");
+  BLEDevice::init("WARDIVE_PRO_NODE");
+  pBLEScan = BLEDevice::getScan();
+  pBLEScan->setAdvertisedDeviceCallbacks(new MyAdvertisedDeviceCallbacks());
+  pBLEScan->setActiveScan(true); // Active scan for more details
+  pBLEScan->setInterval(100);
+  pBLEScan->setWindow(99); 
 }
 
 void loop() {
-  // 1. Scan for WiFi Networks
-  int n = WiFi.scanNetworks();
-  if (n > 0) {
-    String payload = "[";
-    for (int i = 0; i < n; ++i) {
-      payload += "{\"type\":\"WiFi\",\"ssid\":\"" + WiFi.SSID(i) + "\",";
-      payload += "\"mac\":\"" + WiFi.BSSIDstr(i) + "\",";
-      payload += "\"rssi\":" + String(WiFi.RSSI(i)) + ",";
-      payload += "\"lat\":34.0522, \"lng\":-118.2437}"; // Placeholder for actual GPS
-      if (i < n - 1) payload += ",";
-    }
-    payload += "]";
-    
-    // 2. Send to Wardrive Pro Server
-    sendSignals(payload);
-  }
-  
-  delay(5000); // Wait 5 seconds between scans for power efficiency
-}
-
-void sendSignals(String json) {
-  if (WiFi.status() == WL_CONNECTED) {
-    HTTPClient http;
-    http.begin(serverUrl);
-    http.addHeader("Content-Type", "application/json");
-    int httpResponseCode = http.POST(json);
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    http.end();
-  }
+  BLEScanResults foundDevices = pBLEScan->start(scanTime, false);
+  pBLEScan->clearResults();   // delete results fromBLEScan buffer to release memory
+  delay(100);
 }
