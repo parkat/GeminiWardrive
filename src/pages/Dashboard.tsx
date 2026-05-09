@@ -1,50 +1,58 @@
 import React from 'react';
 import { useSignals } from '../hooks/useSignals';
-import { Cpu, Database, Battery, MapPin, Signal, Wifi, Bluetooth, Radio, Terminal } from 'lucide-react';
+import { Cpu, Database, Battery, MapPin, Signal, Wifi, Bluetooth, Radio, Terminal, Zap, Satellite, Trash2, Cpu as Chip, Activity } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts';
 
 export const Dashboard: React.FC = () => {
   const { signals, stats } = useSignals();
 
-  const wifiCount = signals.filter(s => s.type === 'WiFi').length;
-  const bleCount = signals.filter(s => s.type === 'Bluetooth').length;
-
-  // Prepare chart data
-  const chartData = signals.slice(0, 15).reverse().map((s, i) => ({
-    time: i,
-    rssi: Math.abs(s.rssi)
-  }));
-
   return (
     <div className="space-y-6 max-w-[1600px] mx-auto pb-10">
       
       <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
         
-        {/* Sidebar Mini-Stats (Left on Desktop) */}
+        {/* Sidebar Status (Left) */}
         <div className="space-y-6 hidden xl:block">
-           <section>
-              <h3 className="text-[11px] font-bold text-brand-muted uppercase tracking-[0.2em] mb-4">Capture Stats</h3>
+           <section className="bg-brand-panel border border-white/5 rounded-xl p-5 backdrop-blur-md">
+              <h3 className="text-[11px] font-bold text-brand-muted uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <Chip size={14} /> Hardware Link
+              </h3>
               <div className="space-y-4">
-                 <DisplayStat label="Access Points" value={wifiCount} />
-                 <DisplayStat label="BLE Devices" value={bleCount} color="text-brand-cyan" />
-                 <DisplayStat label="Total Nodes" value={signals.length} color="text-brand-amber" />
+                 <HardwareRow label="RTL-SDR" status={stats.sdr.status} />
+                 <HardwareRow label="Alfa WiFi" status={stats.alfa.status} />
+                 <HardwareRow label="ESP32 (BLE)" status={stats.esp32.status} />
+                 <HardwareRow label="USB GPS" status={stats.gps.status} />
               </div>
            </section>
 
-           <section>
-              <h3 className="text-[11px] font-bold text-brand-muted uppercase tracking-[0.2em] mb-4">Security Types</h3>
-              <div className="space-y-2">
-                 <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden flex">
-                    <div className="h-full bg-brand-red" style={{ width: '15%' }}></div>
-                    <div className="h-full bg-brand-amber" style={{ width: '45%' }}></div>
-                    <div className="h-full bg-brand-cyan" style={{ width: '40%' }}></div>
-                 </div>
-                 <ul className="text-[11px] font-mono space-y-1 mt-2 uppercase">
-                    <li className="flex justify-between"><span className="text-brand-red">● Open</span> <span>15%</span></li>
-                    <li className="flex justify-between"><span className="text-brand-amber">● WPA2</span> <span>45%</span></li>
-                    <li className="flex justify-between"><span className="text-brand-cyan">● WPA3</span> <span>40%</span></li>
-                 </ul>
+           <section className="bg-brand-panel border border-white/5 rounded-xl p-5 backdrop-blur-md">
+              <h3 className="text-[11px] font-bold text-brand-muted uppercase tracking-[0.2em] mb-4">Signal Density</h3>
+              <div className="space-y-4">
+                 <DisplayStat label="Access Points" value={signals.filter(s => s.type === 'WiFi').length} />
+                 <DisplayStat label="BT/BLE Nodes" value={signals.filter(s => s.type === 'Bluetooth').length} color="text-brand-cyan" />
+              </div>
+           </section>
+
+           <section className="bg-brand-panel border border-white/5 rounded-xl p-5 backdrop-blur-md">
+              <h3 className="text-[11px] font-bold text-brand-muted uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+                <Database size={14} /> Intelligence Cache
+              </h3>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center text-[10px] font-mono">
+                  <span className="text-brand-muted">Total Records:</span>
+                  <span className="text-white">{signals.length}</span>
+                </div>
+                <button 
+                  onClick={() => {
+                    if(confirm("DANGER: This will permanently wipe all captured signal data from your local device. Proceed?")) {
+                      fetch('/api/purge', { method: 'POST' }).then(() => window.location.reload());
+                    }
+                  }}
+                  className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-brand-red/10 border border-brand-red/30 text-brand-red text-[10px] font-bold uppercase tracking-widest hover:bg-brand-red/20 transition-all rounded"
+                >
+                  <Trash2 size={12} /> Purge Database
+                </button>
               </div>
            </section>
         </div>
@@ -52,9 +60,9 @@ export const Dashboard: React.FC = () => {
         {/* Main Feed Area */}
         <div className="xl:col-span-3 space-y-6">
            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <StatTile label="Processor" value={`${stats.cpuUsage}%`} icon={<Cpu size={14} />} />
-              <StatTile label="Memory" value={`${stats.memoryUsage}%`} icon={<Database size={14} />} />
-              <StatTile label="Battery" value={`${Math.floor(stats.batteryLevel)}%`} icon={<Battery size={14} />} />
+              <StatTile label="Pos Lock" value={stats.gps.status === 'LOCKED' ? 'VALID' : 'NO_FIX'} icon={<Satellite size={14} />} color={stats.gps.status === 'LOCKED' ? 'text-brand-green' : 'text-brand-red'} />
+              <StatTile label="Capture Buffer" value={`${signals.length}/500`} icon={<Activity size={14} />} color="text-brand-cyan" />
+              <StatTile label="Session Time" value={`${Math.floor(stats.uptime / 60)}m`} icon={<Terminal size={14} />} color="text-white" />
            </div>
 
            <div className="bg-brand-panel border border-white/5 rounded-xl overflow-hidden backdrop-blur-xl">
@@ -135,13 +143,28 @@ const DisplayStat: React.FC<{ label: string; value: string | number; color?: str
   </div>
 );
 
-const StatTile: React.FC<{ label: string; value: string; icon: React.ReactNode }> = ({ label, value, icon }) => (
+const HardwareRow: React.FC<{ label: string; status: string }> = ({ label, status }) => {
+  const isOnline = status === 'ACTIVE' || status === 'LOCKED' || status === 'CONNECTED';
+  const color = isOnline ? 'text-brand-green' : status === 'ERROR' ? 'text-brand-red' : 'text-brand-muted';
+  
+  return (
+    <div className="flex justify-between items-center text-[11px] font-mono">
+      <span className="text-brand-muted">{label}</span>
+      <div className="flex items-center gap-2">
+        <span className={`${color} font-bold`}>{status}</span>
+        <div className={`w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-brand-green shadow-[0_0_5px_#34d399]' : 'bg-brand-muted opacity-30'}`} />
+      </div>
+    </div>
+  );
+};
+
+const StatTile: React.FC<{ label: string; value: string; icon: React.ReactNode; color?: string }> = ({ label, value, icon, color = "text-white" }) => (
   <div className="bg-brand-panel border border-white/5 p-4 rounded-xl flex items-center justify-between">
     <div>
        <div className="text-[10px] font-mono text-brand-muted uppercase tracking-widest flex items-center gap-1">
          {icon} {label}
        </div>
-       <div className="text-xl font-mono text-white font-bold">{value}</div>
+       <div className={`text-xl font-mono font-bold ${color}`}>{value}</div>
     </div>
   </div>
 );

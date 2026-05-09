@@ -31,11 +31,20 @@ export interface Session {
   };
 }
 
+export type CollectorStatus = 'CONNECTED' | 'DISCONNECTED' | 'ACTIVE' | 'ERROR' | 'IDLE';
+
 export interface HardwareStats {
   cpuUsage: number;
   memoryUsage: number;
   batteryLevel: number;
   uptime: number;
-  gpsStatus: 'Locked' | 'Searching' | 'Disconnected';
+  gps: { 
+    status: CollectorStatus | string;
+    lat: number;
+    lng: number;
+  };
+  esp32: { status: CollectorStatus | string };
+  alfa: { status: CollectorStatus | string };
+  sdr: { status: CollectorStatus | string };
   activeSignals: number;
 }

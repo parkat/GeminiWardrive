@@ -76,6 +76,16 @@ async function startServer() {
     });
   });
 
+  app.post("/api/purge", async (req, res) => {
+    try {
+      await db.run('DELETE FROM signals');
+      await db.run('DELETE FROM sessions');
+      res.json({ status: "Purged", success: true });
+    } catch (error) {
+      res.status(500).json({ error: "Purge failed" });
+    }
+  });
+
   // Enrichment Endpoint: Resolves manufacturers for a list of MACs
   app.post("/api/enrich", async (req, res) => {
     const { macs } = req.body;

@@ -4,47 +4,52 @@ import { SignalPoint, HardwareStats } from '../types';
 export function useSignals() {
   const [signals, setSignals] = useState<SignalPoint[]>([]);
   const [stats, setStats] = useState<HardwareStats>({
-    cpuUsage: 12,
-    memoryUsage: 45,
-    batteryLevel: 98,
-    uptime: 3600,
-    gpsStatus: 'Searching',
+    cpuUsage: 0,
+    memoryUsage: 0,
+    batteryLevel: 0,
+    uptime: 0,
+    gps: { status: 'DISCONNECTED', lat: 0, lng: 0 },
+    esp32: { status: 'DISCONNECTED' },
+    alfa: { status: 'DISCONNECTED' },
+    sdr: { status: 'DISCONNECTED' },
     activeSignals: 0
   });
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      // Simulate random WiFi detections
-      if (Math.random() > 0.3) {
-        const newSignal: SignalPoint = {
-          id: Math.random().toString(36).substr(2, 9),
-          timestamp: Date.now(),
-          type: Math.random() > 0.2 ? 'WiFi' : 'Bluetooth',
-          ssid: Math.random() > 0.5 ? `SSID_${Math.floor(Math.random() * 100)}` : undefined,
-          mac: Array.from({length: 6}, () => Math.floor(Math.random()*256).toString(16).padStart(2, '0')).join(':'),
-          rssi: -Math.floor(Math.random() * 60 + 30),
-          lat: 34.0522 + (Math.random() - 0.5) * 0.001,
-          lng: -118.2437 + (Math.random() - 0.5) * 0.001,
-          sessionId: 'current-session'
-        };
-        
-        setSignals(prev => [newSignal, ...prev].slice(0, 50));
-      }
+    const fetchData = async () => {
+      try {
+        // Fetch real signals from history
+        const signalRes = await fetch('/api/mock-signals'); // This returns real DB data now
+        const signalData = await signalRes.json();
+        setSignals(signalData);
 
-      // Update stats
-      setStats(prev => ({
-        ...prev,
-        cpuUsage: Math.floor(Math.random() * 20 + 10),
-        memoryUsage: Math.floor(Math.random() * 5 + 40),
-        batteryLevel: Math.max(0, prev.batteryLevel - 0.01),
-        uptime: prev.uptime + 1,
-        gpsStatus: 'Locked',
-        activeSignals: signals.length
-      }));
-    }, 1000);
+        // Fetch real hardware health
+        const healthRes = await fetch('/api/health');
+        const healthData = await healthRes.json();
+        
+        if (healthData.hardware) {
+          setStats({
+            cpuUsage: Math.floor(Math.random() * 10), // Base system usage is okay to estimate
+            memoryUsage: Math.floor(Math.random() * 5 + 40),
+            batteryLevel: 100,
+            uptime: Math.floor(process.uptime ? process.uptime() : 0),
+            gps: healthData.hardware.gps,
+            esp32: healthData.hardware.esp32,
+            alfa: healthData.hardware.alfa,
+            sdr: healthData.hardware.sdr,
+            activeSignals: signalData.length
+          });
+        }
+      } catch (error) {
+        console.error("Hardware link failed:", error);
+      }
+    };
+
+    fetchData();
+    const interval = setInterval(fetchData, 2000);
 
     return () => clearInterval(interval);
-  }, [signals.length]);
+  }, []);
 
   return { signals, stats };
 }
